@@ -1,0 +1,198 @@
+---
+title: "tidy"
+author: "Yuting Chen"
+date: "2021/11/25"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+### Biweekly cases 
+
+```{r}
+biweekCases <- read_csv("../data-raw/1_biweekly_cases_per_million.csv")
+```
+
+```{r}
+biweekCases %>%
+  pivot_longer(cols = 3:length(names(biweekCases)),
+               names_to = "country",
+               values_to = "cases") %>%
+  write_csv("../data/1_biweekCases_New.csv")
+```
+
+
+### Biweekly Deaths
+
+```{r}
+biweekDeaths <- read_csv("../data-raw/2_biweekly_deaths_per_million.csv")
+```
+
+```{r}
+biweekDeaths %>%
+  pivot_longer(cols = 3:length(names(biweekDeaths)),
+               names_to = "country",
+               values_to = "deaths") %>%
+  write_csv("../data/2_biweekDeaths_New.csv")
+```
+
+### Poverty Headcount
+
+```{r}
+povertyHeadcount <- read_csv("../data-raw/0_4_poverty_headcount_by_country.csv")
+```
+
+```{r}
+povertyHeadcount %>%
+  select(CountryCode, CountryName, RequestYear, CoverageType, PovertyLine, HeadCount) %>%
+  write_csv("../data/0_4_povertyHeadcount.csv")
+```
+
+### Weekly Cases
+
+```{r}
+weeklyCases <- read_csv("../data-raw/5_weekly_cases_per_million.csv")
+```
+
+```{r}
+weeklyCases %>%
+  pivot_longer(cols = 3:length(names(weeklyCases)),
+               names_to = "country",
+               values_to = "cases") %>%
+  write_csv("../data/5_weeklyCases_New.csv")
+```
+
+
+### Weekly Deaths
+
+```{r}
+weeklyDeaths <- read_csv("../data-raw/6_weekly_deaths_per_million.csv")
+```
+
+```{r}
+weeklyDeaths %>%
+  pivot_longer(cols = 3:length(names(weeklyDeaths)),
+               names_to = "country",
+               values_to = "deaths") %>%
+  write_csv("../data/6_weeklyDeaths_New.csv")
+```
+
+
+### Vaccinations national
+
+```{r}
+vaccination <- read_csv("../data-raw/7_vaccinations_national.csv")
+```
+```{r}
+vaccination %>% 
+  select(-daily_vaccinations_per_million) ->
+  vaccination_new
+```
+
+### Total Cases
+
+```{r}
+totalCases <- read_csv("../data-raw/3_total_cases_per_million.csv")
+```
+
+```{r}
+totalCases %>%
+  pivot_longer(cols = 3:length(names(totalCases)),
+               names_to = "country",
+               values_to = "cases") ->
+  totalCases_new
+```
+
+### Total Deaths
+
+```{r}
+totalDeaths <- read_csv("../data-raw/4_total_deaths_per_million.csv")
+```
+
+```{r}
+totalDeaths %>%
+  pivot_longer(cols = 3:length(names(totalDeaths)),
+               names_to = "country",
+               values_to = "deaths") ->
+  totalDeaths_new
+```
+
+
+
+### Total Cases and Deaths and Vaccinations and Populations
+```{r}
+Populations <- read_csv("../data-raw/8_locations.csv")
+```
+
+
+```{r}
+vaccination_new %>% 
+  rename(country = location)  %>% 
+  select(country, date, total_vaccinations_per_hundred, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred, total_boosters_per_hundred) ->
+  vaccination_new
+
+Populations %>% 
+  rename(country = location) %>% 
+  select(country, continent, population) ->
+  Populations
+
+totalCases_new %>% 
+  left_join(totalDeaths_new, by = c("date", "country")) %>% 
+  rename(world_cases = World.x,
+         world_deaths = World.y) %>% 
+  left_join(vaccination_new, by = c("date", "country")) %>% 
+  left_join(Populations, by = "country") %>% 
+  filter(!is.na(population)) %>% 
+  select(country, continent, date, everything()) %>% 
+  mutate(date = ymd(date)) %>%
+  write_csv("../data/Total_Data_New.csv")
+
+
+```
+
+```{r}
+newCases <- read_csv("../data-raw/9_new_cases_per_million.csv")
+newCases <- newCases %>%
+  pivot_longer(cols = 3:length(names(newCases)),
+               names_to = "country",
+               values_to = "newcases")
+```
+
+```{r}
+newDeaths <- read_csv("../data-raw/10_new_deaths_per_million.csv")
+newDeaths <- newDeaths %>%
+  pivot_longer(cols = 3:length(names(newDeaths)),
+               names_to = "country",
+               values_to = "newdeaths")
+```
+
+```{r}
+total_data <- read_csv("../data/Total_Data_New.csv")
+
+total_data %>% 
+  left_join(newCases, by = c("date", "country")) %>% 
+  left_join(newDeaths, by = c("date", "country")) %>% 
+  rename(world_cases_new = World.x,
+         world_deaths_new = World.y) %>% 
+  write_csv("../data/Total_Data_New.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
